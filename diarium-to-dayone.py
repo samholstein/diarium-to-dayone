@@ -162,7 +162,11 @@ def build_entry(d, media_dir: Optional[Path] = None):
     # 1) date → creationDate (UTC "Z")
     date_str = d["date"]
     try:
+        # Parse the date as local time (Diarium stores local times)
         ts = dt.datetime.fromisoformat(date_str)
+        # Convert from EDT (UTC-4) to UTC by adding 4 hours
+        ts_utc = ts + dt.timedelta(hours=4)  # Convert from EDT to UTC
+        creation = ts_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
         # Try to trim microseconds if present (e.g. '2010-10-26T15:47:53.48828')
         if "." in date_str:
@@ -171,9 +175,10 @@ def build_entry(d, media_dir: Optional[Path] = None):
             frac = (frac + "000000")[:6]
             date_str_fixed = f"{base}.{frac}"
             ts = dt.datetime.fromisoformat(date_str_fixed)
+            ts_utc = ts + dt.timedelta(hours=4)  # Convert from EDT to UTC
+            creation = ts_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
             raise
-    creation = ts.strftime("%Y-%m-%dT%H:%M:%SZ")
     
     # 2) main body
     body = BeautifulSoup(d.get("html", ""), "html.parser").get_text("\n").strip()
